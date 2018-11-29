@@ -4,7 +4,6 @@ library(doSNOW)
 library(doParallel)
 n.cl <- detectCores() # dectect the number of the cores in the local PC
 cl <- makeCluster(n.cl-1) # use (n.cl-1) cores in the machine
-
 cross_validation=function(data, nfolder,cores){
   # sd for each colunm
   # std = apply(data, 2, sd, na.rm=TRUE)
@@ -34,8 +33,11 @@ cross_validation=function(data, nfolder,cores){
     if(size1==1)
       test_data1=matrix(test_data1,ncol=p)
     train_data=data[-index,]
-
-    b=Gibbs_sampler(train_data,m,N.burn=5, N.iter=20)
+    alpha.1 = rep(0.5,p)
+    beta.1 = rep(1.5,p)
+    theta.1 = rep(1/m,m)
+    K.1 = sample.int(m,size = dim(train_data)[1], replace = TRUE)
+    b= Gibbs_sampler(data = train_data, m = m,alpha.0 = alpha.1, beta.0 = beta.1, K.0 = K.1, theta.0 = theta.1, N.iter=20, N.burn=5)
     knots=b$knots
     alpha = b$alpha
     beta = b$beta
@@ -142,11 +144,22 @@ cross_validation=function(data, nfolder,cores){
   m1=unique(c(3,4,seq2,seq1,seq3))
   m_num = length(m1)
   print(m1)
-  Sys.sleep(10)
+  #Sys.sleep(10)
+
+  #   err <- rep(0,m_num)
+  #   for (i in 1:m_num){
+  #     for (j in 1:nfolder){
+  #       err[i] = err[i] + squared_error(group_index[[j]],m1[i])
+  #     }
+  #     print(i)
+  #   }
+  #   return(m1[which.min(err)])
+  # }
 
   registerDoSNOW(cores)
   errors <- foreach(i = 1:m_num,
-                    .combine = 'cbind') %:%
+                    .combine = 'cbind',
+                    .export = c('rdirichlet','rinvgamma','Gibbs_sampler')) %:%
     foreach(j = 1:nfolder, .combine = c) %dopar% {
       return(squared_error(group_index[[j]], m1[i]))
     }
@@ -154,6 +167,7 @@ cross_validation=function(data, nfolder,cores){
   errors2 <- apply(errors,2,mean)
   return(m1[which.min(errors2)])
 }
+
   #################################### Parallel Computing ####################################
 
   # #t1 <- Sys.time()

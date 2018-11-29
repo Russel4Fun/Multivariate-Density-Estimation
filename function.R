@@ -13,9 +13,9 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, N.iter, N.burn
   theta <- matrix(0,N.iter,m)
   alpha <- matrix(0,N.iter,p)
   beta <- matrix(0,N.iter,p)
-  theta[1,]<-rep(alpha.0,m)
-  beta[1,]<-rep(beta.0,p)
-  alpha[1,]<-rep(alpha.0,p)
+  theta[1,]<-theta.0
+  beta[1,]<-beta.0
+  alpha[1,]<-alpha.0
   K[1,] <- K.0
   knots = matrix(0,p,m)
   # matrix to restore the observed data values
@@ -152,4 +152,5 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, N.iter, N.burn
   }
   return(list(K = K[(N.burn+1):N.iter, ], theta = theta[(N.burn+1):N.iter, ], alpha = alpha[(N.burn+1): N.iter, ],
               beta = beta[(N.burn+1):N.iter, ], knots = knots))
+
 }
