@@ -5,7 +5,7 @@ library(doParallel)
 n.cl <- detectCores() # dectect the number of the cores in the local PC
 cl <- makeCluster(n.cl-1) # use (n.cl-1) cores in the machine
 
-cross_validation=function(data, nfolder){
+cross_validation=function(data, nfolder,cores){
   # sd for each colunm
   # std = apply(data, 2, sd, na.rm=TRUE)
   ## nfolder: the number of folders
@@ -50,7 +50,12 @@ cross_validation=function(data, nfolder){
       for(j in 1:p){
         real_value = test_data1[i,j]
         data1 = data[i,-j]
-        knots1 = knots[-j,]
+        if(p == 2){
+          knots1 = matrix(knots[-j,],1)
+        }
+        else(
+          knots1 = knots[-j,]
+        )
         predict_value = c()
         for(l in 1: dim(beta)[1]){
           alpha1 = alpha[l,-j]
@@ -67,7 +72,7 @@ cross_validation=function(data, nfolder){
             weight1[k] = weight[k]/sum(weight)
           }
           predict_value=c(predict_value, sum(weight1 * knots[j,]))
-          print(l)
+    #      print(l)
         }
         predict_value = mean(predict_value)
         sum1 = sum1 + (predict_value - real_value)^2/var(data[,j])
@@ -132,20 +137,23 @@ cross_validation=function(data, nfolder){
   seq1=(center-5):(center+5)
   step=floor((size_train-center-2)/3)
   seq3=seq(center+2+step,center+2+step*3,step)
-  step=floor((center-3-2)/3)
-  seq2=seq(center-2-3*step,center-2-step,step)
-  m1=unique(c(seq2,seq1,seq3))
+  step=floor((center-3-2)/4)
+  seq2=seq(center-2-4*step,center-2-step,step)
+  m1=unique(c(3,4,seq2,seq1,seq3))
   m_num = length(m1)
+  print(m1)
+  Sys.sleep(10)
 
-  #t1 <- Sys.time()
-  # registerDoSNOW(cl)
-  # errors <- foreach(i = 1:m_num,
-  #                   .combine = 'cbind') %:%
-  #   foreach(j = 1:nfolder, .combine = c) %dopar% {
-  #     return(squared_error(group_index[[j]], m1[i]))
-  #   }
-  #
-  # return(errors)
+  registerDoSNOW(cores)
+  errors <- foreach(i = 1:m_num,
+                    .combine = 'cbind') %:%
+    foreach(j = 1:nfolder, .combine = c) %dopar% {
+      return(squared_error(group_index[[j]], m1[i]))
+    }
+
+  errors2 <- apply(errors,2,mean)
+  return(m1[which.min(errors2)])
+}
   #################################### Parallel Computing ####################################
 
   # #t1 <- Sys.time()
@@ -165,15 +173,15 @@ cross_validation=function(data, nfolder){
 
   ############################################################################################
 
-  err <- rep(0,m_num)
-  for (i in 1:m_num){
-    for (j in 1:nfolder){
-      err[i] = err[i] + squared_error(group_index[[j]],m1[i])
-    }
-    print(i)
-  }
-  return(m1[which.min(err)])
-}
+#   err <- rep(0,m_num)
+#   for (i in 1:m_num){
+#     for (j in 1:nfolder){
+#       err[i] = err[i] + squared_error(group_index[[j]],m1[i])
+#     }
+#     print(i)
+#   }
+#   return(m1[which.min(err)])
+# }
 
 # t1 <- Sys.time()
 # cv_miss_new3(aa[[2]], 5, cl)
