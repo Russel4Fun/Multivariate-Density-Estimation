@@ -4,6 +4,7 @@ library(gtools)
 library(foreach)
 library(doSNOW)
 library(doParallel)
+library(datasets)
 set.seed(740)
 # A hierarchial model to generate 2-dimensional data
 mu.true=function(x){exp(x/6)-x+log(x^4+1)}
@@ -12,7 +13,45 @@ n=100; x=rnorm(n,0,2)
 y=mu.true(x)+sigma.true(x)*rnorm(n)
 data1 = cbind(x,y)
 
-Gibbs_sampler <- function(data, m, N.iter, N.burn){
+# get the estimate using Gibbs Sampler
+# b <- Gibbs_sampler(data1,m=10,N.iter = 2000, N.burn = 1000)
+# dimension = dim(b$beta)[2]
+# beta.estimate = numeric(dimension)
+# alpha.estimate = numeric(dimension)
+# for (i in 1:dimension){
+#   beta.estimate[i] = mean((b$beta)[,i])
+#   alpha.estimate[i] = mean((b$alpha)[,i])
+# }
+
+
+# generating missing data
+miss_x_prob = 0.4; miss_y_prob= 0.4
+miss_x_index = sample.int(n, size = floor(miss_x_prob * n),replace = F)
+miss_y_index = sample.int(n, size = floor(miss_y_prob * n),replace = F)
+x1 = x
+x1[miss_x_index] = NA
+y1 = y
+y1[miss_y_index] = NA
+missing_data1 <- cbind(x1,y1)
+
+# another simulation data
+require(MASS)
+miss_x_prob1 = 0.3; miss_y_prob1 = 0.3;miss_z_prob1 = 0.3
+sigma <- matrix(data = c(1, 1.2, 2.2, 1.2, 1, 1.2, 2.2, 1.2, 1), nrow = 3)
+sigma <- sigma%*%t(sigma)
+data2 <- mvrnorm(n = 100, mu = c(5, 5, 5), Sigma = sigma)
+missing_x_index_1 = sample.int(100, size = 100 * miss_x_prob1, replace = F)
+missing_y_index_1 = sample.int(100, size = 100 * miss_y_prob1, replace = F)
+missing_z_index_1 = sample.int(100, size = 100 * miss_z_prob1, replace = F)
+missing_data2 <- data2
+missing_data2[missing_x_index_1,1] = NA
+missing_data2[missing_y_index_1,2] = NA
+missing_data2[missing_x_index_1,3] = NA
+
+# real iris data
+data3 = iris[,1:4]
+
+Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, N.iter, N.burn){
   n = dim(data)[1]
   p = dim(data)[2]
   a0 = rep(1,m)
@@ -21,10 +60,10 @@ Gibbs_sampler <- function(data, m, N.iter, N.burn){
   theta <- matrix(0,N.iter,m)
   alpha <- matrix(0,N.iter,p)
   beta <- matrix(0,N.iter,p)
-  theta[1,]<-rep(1/m,m)
-  beta[1,]<-rep(1.5,p)
-  alpha[1,]<-rep(1.5,p)
-  K[1,] <- sample.int(m,size = n, replace = TRUE)
+  theta[1,]<-theta.0
+  beta[1,]<-beta.0
+  alpha[1,]<-alpha.0
+  K[1,] <- K.0
   knots = matrix(0,p,m)
   # matrix to restore the observed data values
   f = matrix(0,n,m)
@@ -160,11 +199,11 @@ Gibbs_sampler <- function(data, m, N.iter, N.burn){
   }
   return(list(K = K[(N.burn+1):N.iter, ], theta = theta[(N.burn+1):N.iter, ], alpha = alpha[(N.burn+1): N.iter, ],
               beta = beta[(N.burn+1):N.iter, ], knots = knots))
+
 }
 
 n.cl <- detectCores() # dectect the number of the cores in the local PC
 cl <- makeCluster(n.cl-1) # use (n.cl-1) cores in the machine
-
 cross_validation=function(data, nfolder,cores){
   # sd for each colunm
   # std = apply(data, 2, sd, na.rm=TRUE)
@@ -194,8 +233,11 @@ cross_validation=function(data, nfolder,cores){
     if(size1==1)
       test_data1=matrix(test_data1,ncol=p)
     train_data=data[-index,]
-
-    b=Gibbs_sampler(train_data,m,N.burn=5, N.iter=20)
+    alpha.1 = rep(0.5,p)
+    beta.1 = rep(1.5,p)
+    theta.1 = rep(1/m,m)
+    K.1 = sample.int(m,size = dim(train_data)[1], replace = TRUE)
+    b= Gibbs_sampler(data = train_data, m = m,alpha.0 = alpha.1, beta.0 = beta.1, K.0 = K.1, theta.0 = theta.1, N.iter=5000, N.burn=1000)
     knots=b$knots
     alpha = b$alpha
     beta = b$beta
@@ -302,18 +344,32 @@ cross_validation=function(data, nfolder,cores){
   m1=unique(c(3,4,seq2,seq1,seq3))
   m_num = length(m1)
   print(m1)
-  Sys.sleep(10)
+  #Sys.sleep(10)
+
+  #   err <- rep(0,m_num)
+  #   for (i in 1:m_num){
+  #     for (j in 1:nfolder){
+  #       err[i] = err[i] + squared_error(group_index[[j]],m1[i])
+  #     }
+  #     print(i)
+  #   }
+  #   return(m1[which.min(err)])
+  # }
 
   registerDoSNOW(cores)
   errors <- foreach(i = 1:m_num,
-                    .combine = 'cbind') %:%
+                    .combine = 'cbind',
+                    .export = c('rdirichlet','rinvgamma','Gibbs_sampler')) %:%
     foreach(j = 1:nfolder, .combine = c) %dopar% {
       return(squared_error(group_index[[j]], m1[i]))
     }
 
   errors2 <- apply(errors,2,mean)
-  return(m1[which.min(errors2)])
+  result <- m1[which.min(errors2)]
+  write(result,'result.txt',sep = "")
+  return(result)
 }
+
 #################################### Parallel Computing ####################################
 
 # #t1 <- Sys.time()
@@ -354,4 +410,5 @@ cross_validation=function(data, nfolder,cores){
 # t2 <- Sys.time()
 # print("old")
 # print(difftime(t2, t1)) # Time difference of 2.331492 hours
-cross_validation(data1,5,cl)
+
+cross_validation(data1,nfolder=5,cores=cl)
