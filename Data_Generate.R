@@ -22,4 +22,14 @@ m.estimate <- cross_validation(data1,5)
 miss_x_prob = 0.4; miss_y_prob= 0.4
 miss_x_index = sample.int(n, size = floor(miss_x_prob * n),replace = F)
 miss_y_index = sample.int(n, size = floor(miss_y_prob * n),replace = F)
+x1 = x
+x1[miss_x_index] = NA
+y1 = y
+y1[miss_y_index] = NA
+missing_data1 <- cbind(x1,y1)
 
+# another simulation data
+require(MASS)
+sigma <- matrix(data = c(1, 1.2, 2.2, 1.2, 1, 1.2, 2.2, 1.2, 1), nrow = 3)
+sigma <- sigma%*%t(sigma)
+data2 <- mvrnorm(n = 100, mu = c(5, 5, 5), Sigma = sigma)
