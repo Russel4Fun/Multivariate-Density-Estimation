@@ -154,3 +154,78 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, N.iter, N.burn
               beta = beta[(N.burn+1):N.iter, ], knots = knots))
 
 }
+
+fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, N.iter, N.burn){
+  n = dim(data)[1]
+  p = dim(data)[2]
+  a0 = rep(1,m)
+  # initializing the MCMC
+  K <- matrix(0,N.iter,n)
+  theta <- matrix(0,N.iter,m)
+  alpha <- matrix(0,N.iter,p)
+  theta[1,]<-theta.0
+  alpha[1,]<-alpha.0
+  K[1,] <- K.0
+  knots = matrix(0,p,m)
+  # matrix to restore the observed data values
+  f = matrix(0,n,m)
+
+  # choosing knots by sorting the data and setting equal length of step
+  x = data[,1]
+  index_order=round((1:(m-2))*n/(m-1))
+  index_order=ifelse(index_order==0,1,index_order)
+  knots[1,] = c(min(x),sort(x)[index_order],max(x));
+  for (i in 2:p) {
+    y <- data[,i]
+    y.ord=y[order(x)]
+    index_order=round((1:(m-2))*n/(m-1))
+    index_order=ifelse(index_order==0,1,index_order)
+    knots[i,]=y.ord[c(1,index_order,n)]
+  }
+
+  # Now we are doing the MCMC sampling
+  for(l in 2:N.iter){
+    for(k in 1:m){
+      f[,k] = rep(1,n)
+      for (j in 1:p){
+        coeff <- 1/(alpha[l-1,j] * gamma(1/2))
+        pow <- -(abs((data[,j]-knots[j,k])/alpha[l-1,j])**2)
+        f[,k] <- f[,k] * coeff * exp(pow)
+      }
+    }
+
+    theta.old <- theta[l-1,]
+    # Now sample K
+    for (i in 1:n){
+      fvalue <- as.vector(f[i,])
+      K[l,i] <- sample.int(m, size=1, prob = theta.old * fvalue, replace = TRUE)
+    }
+
+    # Now sample theta
+    theta.new = rdirichlet(1,a0+tabulate(K[l,],nbins=m))
+    theta[l,] <- theta.new
+
+    # Now sample alpha with the help of inverse gamma distribution
+    #a <- rep(n^0.4 + 1,p)
+    # b <- rep(0,p)
+    # for(j in 1:p){
+    #   b[j] <- var(data[,j])
+    # }
+    a <- rep(2.01,p)
+    b <- rep(1.01,p)
+
+    alpha_to_beta <- rep(0,p)
+    for (j in 1:p){
+      shape = n/2 + a[j]
+      sum = 0
+      for(i in 1:n){
+        sum = sum + (abs(data[i,j] - knots[j,K[l,i]])) ** 2
+      }
+      scale = sum + b[j]
+      alpha_to_beta[j] <- rinvgamma(n = 1, shape = shape, rate = scale)
+      alpha[l,j] = alpha_to_beta[j] ** (1/2)
+    }
+
+  }
+  return(list(K = K[(N.burn+1):N.iter, ], theta = theta[(N.burn+1):N.iter, ], alpha = alpha[(N.burn+1): N.iter, ], knots = knots))
+}
