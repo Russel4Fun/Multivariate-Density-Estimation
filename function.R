@@ -4,7 +4,7 @@ library(gtools)
 library(coda)
 
 
-Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, N.iter, N.burn){
+Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, knots, N.iter, N.burn){
   n = dim(data)[1]
   p = dim(data)[2]
   a0 = rep(1,m)
@@ -17,22 +17,8 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, N.iter, N.burn
   beta[1,]<-beta.0
   alpha[1,]<-alpha.0
   K[1,] <- K.0
-  knots = matrix(0,p,m)
   # matrix to restore the observed data values
   f = matrix(0,n,m)
-
-  # choosing knots by sorting the data and setting equal length of step
-  x = data[,1]
-  index_order=round((1:(m-2))*n/(m-1))
-  index_order=ifelse(index_order==0,1,index_order)
-  knots[1,] = c(min(x),sort(x)[index_order],max(x));
-  for (i in 2:p) {
-    y <- data[,i]
-    y.ord=y[order(x)]
-    index_order=round((1:(m-2))*n/(m-1))
-    index_order=ifelse(index_order==0,1,index_order)
-    knots[i,]=y.ord[c(1,index_order,n)]
-  }
 
   # Now we are doing the MCMC sampling
   for(l in 2:N.iter){
@@ -155,7 +141,7 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, N.iter, N.burn
 
 }
 
-fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, N.iter, N.burn){
+fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, knots, N.iter, N.burn){
   n = dim(data)[1]
   p = dim(data)[2]
   a0 = rep(1,m)
@@ -166,22 +152,8 @@ fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, N.iter, N.burn){
   theta[1,]<-theta.0
   alpha[1,]<-alpha.0
   K[1,] <- K.0
-  knots = matrix(0,p,m)
   # matrix to restore the observed data values
   f = matrix(0,n,m)
-
-  # choosing knots by sorting the data and setting equal length of step
-  x = data[,1]
-  index_order=round((1:(m-2))*n/(m-1))
-  index_order=ifelse(index_order==0,1,index_order)
-  knots[1,] = c(min(x),sort(x)[index_order],max(x));
-  for (i in 2:p) {
-    y <- data[,i]
-    y.ord=y[order(x)]
-    index_order=round((1:(m-2))*n/(m-1))
-    index_order=ifelse(index_order==0,1,index_order)
-    knots[i,]=y.ord[c(1,index_order,n)]
-  }
 
   # Now we are doing the MCMC sampling
   for(l in 2:N.iter){
