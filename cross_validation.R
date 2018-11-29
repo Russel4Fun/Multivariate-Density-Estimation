@@ -37,7 +37,7 @@ cross_validation=function(data, nfolder,cores){
     beta.1 = rep(1.5,p)
     theta.1 = rep(1/m,m)
     K.1 = sample.int(m,size = dim(train_data)[1], replace = TRUE)
-    b= Gibbs_sampler(data = train_data, m = m,alpha.0 = alpha.1, beta.0 = beta.1, K.0 = K.1, theta.0 = theta.1, N.iter=20, N.burn=5)
+    b= Gibbs_sampler(data = train_data, m = m,alpha.0 = alpha.1, beta.0 = beta.1, K.0 = K.1, theta.0 = theta.1, N.iter=5000, N.burn=1000)
     knots=b$knots
     alpha = b$alpha
     beta = b$beta
@@ -165,7 +165,9 @@ cross_validation=function(data, nfolder,cores){
     }
 
   errors2 <- apply(errors,2,mean)
-  return(m1[which.min(errors2)])
+  result <- m1[which.min(errors2)]
+  write(result,'result.txt',sep = "")
+  return(result)
 }
 
   #################################### Parallel Computing ####################################
