@@ -4,7 +4,7 @@ library(gtools)
 library(coda)
 
 
-Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, knots, N.iter, N.burn){
+Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, a,b,knots, N.iter, N.burn){
   n = dim(data)[1]
   p = dim(data)[2]
   a0 = rep(1,m)
@@ -48,9 +48,14 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, knots, N.iter,
     # for(j in 1:p){
     #   b[j] <- var(data[,j])
     # }
-    a <- rep(2.01,p)
-    b <- rep(1.01,p)
-
+    
+    #a <- rep(2.01,p)
+    #b <- rep(1.01,p)
+  
+    #a = rep(n**0.4+1, p);
+    #b = apply(data, 2, var, na.rm=TRUE)
+    
+    
     alpha_to_beta <- rep(0,p)
     for (j in 1:p){
       shape = n/beta[l-1,j] + a[j]
@@ -58,8 +63,8 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, knots, N.iter,
       for(i in 1:n){
         sum = sum + (abs(data[i,j] - knots[j,K[l,i]])) ** beta[l-1,j]
       }
-      scale = sum + b[j]
-      alpha_to_beta[j] <- rinvgamma(n = 1, shape = shape, rate = scale)
+      rate = sum + b[j]
+      alpha_to_beta[j] <- rinvgamma(n = 1, shape = shape, rate = rate)
       alpha[l,j] = alpha_to_beta[j] ** (1/beta[l-1,j])
     }
 
@@ -141,7 +146,7 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, knots, N.iter,
 
 }
 
-fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, knots, N.iter, N.burn){
+fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, a,b, knots, N.iter, N.burn){
   n = dim(data)[1]
   p = dim(data)[2]
   a0 = rep(1,m)
@@ -152,9 +157,10 @@ fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, knots, N.iter, N.burn){
   theta[1,]<-theta.0
   alpha[1,]<-alpha.0
   K[1,] <- K.0
+  
   # matrix to restore the observed data values
   f = matrix(0,n,m)
-
+  
   # Now we are doing the MCMC sampling
   for(l in 2:N.iter){
     for(k in 1:m){
@@ -183,9 +189,12 @@ fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, knots, N.iter, N.burn){
     # for(j in 1:p){
     #   b[j] <- var(data[,j])
     # }
-    a <- rep(2.01,p)
-    b <- rep(1.01,p)
-
+    
+    #a <- rep(2.01,p)
+    #b <- rep(1.01,p)
+    #a = rep(n**0.4+1, p);
+    #b = apply(data, 2, var, na.rm=TRUE)
+    
     alpha_to_beta <- rep(0,p)
     for (j in 1:p){
       shape = n/2 + a[j]

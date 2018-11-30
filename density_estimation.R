@@ -3,8 +3,6 @@ library(coda)
 library(MASS)
 library(invgamma)
 
-set.seed(740)
-
 
 density_estimation <- function(data,m,N.iter,n.iter,N.burn) {
   
@@ -26,6 +24,7 @@ density_estimation <- function(data,m,N.iter,n.iter,N.burn) {
   # subset to get a dataset whose all dimensions are observed
   part_data=data[complete.cases(data), ]
   part_n=nrow(part_data)
+  a = rep(part_n**0.4+1, p); b = apply(part_data, 2, var, na.rm=TRUE)
   
   # compute the knots 
   knots = matrix(0,p,m)
@@ -46,7 +45,7 @@ density_estimation <- function(data,m,N.iter,n.iter,N.burn) {
   # If no missing values, only use Gibbs_sampler to sample parameters
   if(part_n==n){
     
-    list=Gibbs_sampler(data, m, alpha[1,], beta[1,], K[1,], theta[1,], knots, N.iter, N.burn)
+    list=Gibbs_sampler(data, m, alpha[1,], beta[1,], K[1,], theta[1,], a,b,knots, N.iter, N.burn)
     
     return(list(data=data,theta=list$theta,alpha=list$alpha,beta=list$beta,K=list$K,knots=knots))
   }
@@ -61,11 +60,13 @@ density_estimation <- function(data,m,N.iter,n.iter,N.burn) {
       miss_ind[i,] <- is.na(data[i,])
     }
     
+    wholedata=matrix(0, n, p)
+    
     for(l in 1:(N.iter-1)){
       
       newdata=missing_value_sampler(data, miss_ind, knots, theta[l,], alpha[l,], beta[l,])
-      
-      para=Gibbs_sampler(newdata, m, alpha[l,], beta[l,], K[l,], theta[l,], knots, n.iter, n.iter-1)
+      wholedata=wholedata+newdata
+      para=Gibbs_sampler(newdata, m, alpha[l,], beta[l,], K[l,], theta[l,], a,b,knots, n.iter, n.iter-1)
       
       alpha[l+1,]=para$alpha
       beta[l+1,]=para$beta
@@ -74,7 +75,7 @@ density_estimation <- function(data,m,N.iter,n.iter,N.burn) {
       
     }  
     
-    return(list(newdata=newdata,theta=theta[(N.burn+1):N.iter,],alpha=alpha[(N.burn+1):N.iter,],beta=beta[(N.burn+1):N.iter,],K=K[(N.burn+1):N.iter,],knots=knots))
+    return(list(newdata=wholedata/(N.iter-1),theta=theta[(N.burn+1):N.iter,],alpha=alpha[(N.burn+1):N.iter,],beta=beta[(N.burn+1):N.iter,],K=K[(N.burn+1):N.iter,],knots=knots))
     
   }
 }
@@ -100,7 +101,8 @@ density_estimation_old <- function(data,m,N.iter,n.iter,N.burn) {
   # subset to get a dataset whose all dimensions are observed
   part_data=data[complete.cases(data), ]
   part_n=nrow(part_data)
-  
+  a = rep(part_n**0.4+1, p); b = apply(part_data, 2, var, na.rm=TRUE)
+  #alpha[1,]<-(apply(data, 2, var, na.rm=TRUE)/n**(2/5))^0.5
   # compute the knots 
   knots = matrix(0,p,m)
   x=part_data[,1]
@@ -120,7 +122,7 @@ density_estimation_old <- function(data,m,N.iter,n.iter,N.burn) {
   # If no missing values, only use Gibbs_sampler to sample parameters
   if(part_n==n){
     
-    list=fix_beta_2(data, m, alpha[1,], K[1,], theta[1,], knots, N.iter, N.burn)
+    list=fix_beta_2(data, m, alpha[1,], K[1,], theta[1,], a,b, knots, N.iter, N.burn)
     
     return(list(data=data,theta=list$theta,alpha=list$alpha,beta=list$beta,K=list$K,knots=knots))
   }
@@ -135,11 +137,14 @@ density_estimation_old <- function(data,m,N.iter,n.iter,N.burn) {
       miss_ind[i,] <- is.na(data[i,])
     }
     
+    wholedata=matrix(0, n, p)
+    
     for(l in 1:(N.iter-1)){
       
-      newdata=missing_value_sampler_lastyear(data, miss_ind, knots, theta[l,], alpha[l,])
+      newdata=missing_value_sampler_lastyear(data, miss_ind,knots, theta[l,], alpha[l,])
+      wholedata=wholedata+newdata
+      para=fix_beta_2(newdata, m, alpha[l,], K[l,], theta[l,],a,b,knots, n.iter, n.iter-1)
       
-      para=fix_beta_2(newdata, m, alpha[l,], K[l,], theta[l,], knots, n.iter, n.iter-1)
       
       alpha[l+1,]=para$alpha
       theta[l+1,]=para$theta
@@ -147,7 +152,7 @@ density_estimation_old <- function(data,m,N.iter,n.iter,N.burn) {
       
     }  
     
-    return(list(newdata=newdata,theta=theta[(N.burn+1):N.iter,],alpha=alpha[(N.burn+1):N.iter,],K=K[(N.burn+1):N.iter,],knots=knots))
+    return(list(newdata=wholedata/(N.iter-1),theta=theta[(N.burn+1):N.iter,],alpha=alpha[(N.burn+1):N.iter,],K=K[(N.burn+1):N.iter,],knots=knots))
     
   }
 }
