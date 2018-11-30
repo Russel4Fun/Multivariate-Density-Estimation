@@ -33,7 +33,7 @@ cross_validation=function(data, nfolder,cores){
     if(size1==1)
       test_data1=matrix(test_data1,ncol=p)
     train_data=data[-index,]
-    b = density_estimation(train_data,m,N.iter=300,n.iter=200,N.burn=100)
+    b = density_estimation(train_data,m,N.iter=3000,n.iter=2000,N.burn=1000)
     knots=b$knots
     alpha = b$alpha
     beta = b$beta
@@ -128,7 +128,7 @@ cross_validation_fixbeta2 = function(data, nfolder,cores){
     if(size1==1)
       test_data1=matrix(test_data1,ncol=p)
     train_data=data[-index,]
-    b= density_estimation_old(data = train_data, m = m, N.iter=300, n.iter = 200, N.burn=100)
+    b= density_estimation_old(data = train_data, m = m, N.iter=3000, n.iter = 2000, N.burn=1000)
     knots=b$knots
     alpha = b$alpha
     theta = b$theta

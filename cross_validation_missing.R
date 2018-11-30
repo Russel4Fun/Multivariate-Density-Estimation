@@ -33,7 +33,7 @@ cross_validation_missing=function(data, nfolder, cl){
       test_data1=matrix(test_data1,ncol=p)
     train_data=data[-index,]
 
-    b=density_estimation(train_data,m,N.iter = 300, n.iter = 200, N.burn = 100)
+    b=density_estimation(train_data,m,N.iter = 3000, n.iter = 2000, N.burn = 1000)
     knots=b$knots
     theta=b$theta
     alpha = b$alpha
@@ -162,7 +162,7 @@ cross_validation_missing_fixbeta2 <-function(data,nfolder,cl){
       test_data1=matrix(test_data1,ncol=p)
     train_data=data[-index,]
 
-    b=density_estimation_old(train_data,m,N.iter = 300, n.iter = 200, N.burn = 100)
+    b=density_estimation_old(train_data,m,N.iter = 3000, n.iter = 2000, N.burn = 1000)
     knots=b$knots
     theta=b$theta
     alpha = b$alpha
