@@ -2,6 +2,7 @@ set.seed(740)
 library(datasets)
 library(mice)
 library(MASS)
+library(LaplacesDemon)
 # A hierarchial model to generate 2-dimensional data
 mu.true=function(x){exp(x/6)-x+log(x^4+1)}
 sigma.true=function(x){(x^2)*exp(-abs(x))}
@@ -22,9 +23,10 @@ missing_data1 <- cbind(x1,y1)
 
 # another simulation data
 miss_x_prob1 = 0.2; miss_y_prob1 = 0.2;miss_z_prob1 = 0.2
-sigma <- matrix(data = c(1, 1.2, 2.2, 1.2, 1, 1.2, 2.2, 1.2, 1), nrow = 3)
+sigma <- matrix(data = c(1,0.1,0.1,0.1,1,0.1,0.1,0.1,1),3,3)
 sigma <- sigma%*%t(sigma)
-data2 <- mvrnorm(n = 100, mu = c(5, 5, 5), Sigma = sigma)
+mu1 = matrix(c(1,2,3,4,5,6),2,3)
+data2 <- LaplacesDemon::rmvl(100,mu=mu1,Sigma = sigma)
 missing_x_index_1 = sample.int(100, size = 100 * miss_x_prob1, replace = F)
 missing_y_index_1 = sample.int(100, size = 100 * miss_y_prob1, replace = F)
 missing_z_index_1 = sample.int(100, size = 100 * miss_z_prob1, replace = F)

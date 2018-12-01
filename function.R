@@ -39,7 +39,7 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, a,b,knots, N.i
     }
 
     # Now sample theta
-    theta.new = rdirichlet(1,a0+tabulate(K[l,],nbins=m))
+    theta.new = gtools::rdirichlet(1,a0+tabulate(K[l,],nbins=m))
     theta[l,] <- theta.new
 
     # Now sample alpha with the help of inverse gamma distribution
@@ -48,14 +48,14 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, a,b,knots, N.i
     # for(j in 1:p){
     #   b[j] <- var(data[,j])
     # }
-    
+
     #a <- rep(2.01,p)
     #b <- rep(1.01,p)
-  
+
     #a = rep(n**0.4+1, p);
     #b = apply(data, 2, var, na.rm=TRUE)
-    
-    
+
+
     alpha_to_beta <- rep(0,p)
     for (j in 1:p){
       shape = n/beta[l-1,j] + a[j]
@@ -64,7 +64,7 @@ Gibbs_sampler <- function(data, m, alpha.0, beta.0, K.0, theta.0, a,b,knots, N.i
         sum = sum + (abs(data[i,j] - knots[j,K[l,i]])) ** beta[l-1,j]
       }
       rate = sum + b[j]
-      alpha_to_beta[j] <- rinvgamma(n = 1, shape = shape, rate = rate)
+      alpha_to_beta[j] <- invgamma::rinvgamma(n = 1, shape = shape, rate = rate)
       alpha[l,j] = alpha_to_beta[j] ** (1/beta[l-1,j])
     }
 
@@ -157,10 +157,10 @@ fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, a,b, knots, N.iter, N.bur
   theta[1,]<-theta.0
   alpha[1,]<-alpha.0
   K[1,] <- K.0
-  
+
   # matrix to restore the observed data values
   f = matrix(0,n,m)
-  
+
   # Now we are doing the MCMC sampling
   for(l in 2:N.iter){
     for(k in 1:m){
@@ -180,7 +180,7 @@ fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, a,b, knots, N.iter, N.bur
     }
 
     # Now sample theta
-    theta.new = rdirichlet(1,a0+tabulate(K[l,],nbins=m))
+    theta.new = gtools::rdirichlet(1,a0+tabulate(K[l,],nbins=m))
     theta[l,] <- theta.new
 
     # Now sample alpha with the help of inverse gamma distribution
@@ -189,12 +189,12 @@ fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, a,b, knots, N.iter, N.bur
     # for(j in 1:p){
     #   b[j] <- var(data[,j])
     # }
-    
+
     #a <- rep(2.01,p)
     #b <- rep(1.01,p)
     #a = rep(n**0.4+1, p);
     #b = apply(data, 2, var, na.rm=TRUE)
-    
+
     alpha_to_beta <- rep(0,p)
     for (j in 1:p){
       shape = n/2 + a[j]
@@ -203,7 +203,7 @@ fix_beta_2 <- function(data, m, alpha.0, K.0, theta.0, a,b, knots, N.iter, N.bur
         sum = sum + (abs(data[i,j] - knots[j,K[l,i]])) ** 2
       }
       scale = sum + b[j]
-      alpha_to_beta[j] <- rinvgamma(n = 1, shape = shape, rate = scale)
+      alpha_to_beta[j] <- invgamma::rinvgamma(n = 1, shape = shape, rate = scale)
       alpha[l,j] = alpha_to_beta[j] ** (1/2)
     }
 
