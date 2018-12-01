@@ -43,31 +43,27 @@ if(length(bad) >0){
 }
 
 # real windspeed data
-data3 = mice::windspeed
+data('iris')
+data3 = as.matrix(iris[,1:4])
 n3 = dim(data3)[1]
 missing_a_prob = 0.2;missing_b_prob = 0.2;missing_c_prob = 0.2
-missing_d_prob = 0.2;missing_e_prob = 0.2;missing_f_prob = 0.2
+missing_d_prob = 0.2
 missing_a_index = sample.int(n3, size = n3 * missing_a_prob, replace = F)
 missing_b_index = sample.int(n3, size = n3 * missing_b_prob, replace = F)
 missing_c_index = sample.int(n3, size = n3 * missing_c_prob, replace = F)
 missing_d_index = sample.int(n3, size = n3 * missing_d_prob, replace = F)
-missing_e_index = sample.int(n3, size = n3 * missing_e_prob, replace = F)
-missing_f_index = sample.int(n3, size = n3 * missing_f_prob, replace = F)
 missing_data3 <- data3
 missing_data3[missing_a_index,1] = NA
 missing_data3[missing_b_index,2] = NA
 missing_data3[missing_c_index,3] = NA
 missing_data3[missing_d_index,4] = NA
-missing_data3[missing_e_index,5] = NA
-missing_data3[missing_f_index,6] = NA
 bad1 = c()
 for (i in 1:100){
-  if(is.na(missing_data3[i,1]) & is.na(missing_data3[i,2]) & is.na(missing_data3[i,3]) & is.na(missing_data3[i,4]) &
-     is.na(missing_data3[i,5]) & is.na(missing_data3[i,6])){
+  if(is.na(missing_data3[i,1]) & is.na(missing_data3[i,2]) & is.na(missing_data3[i,3]) & is.na(missing_data3[i,4])){
     bad1 = c(bad1,i)
   }
 }
 if(length(bad1) >0){
-  missing_data3 = missing_data3[-bad,]
+  missing_data3 = missing_data3[-bad1,]
 }
 missing_data3 <- as.matrix(missing_data3)
