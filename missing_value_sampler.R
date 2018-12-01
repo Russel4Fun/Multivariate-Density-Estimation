@@ -78,7 +78,7 @@ missing_value_sampler_lastyear <- function(data, miss_ind, knots, theta, alpha) 
 
         nomis=1
         for (j in nonmiss_ind_i){
-          nomis=nomis*dnorm(data[i,j],knots[j,k],alpha[j])
+          nomis=nomis*dnorm(data[i,j],knots[j,k],alpha[j]/sqrt(2))
         }
         freq=c(freq,theta[k]*nomis)
 
@@ -89,7 +89,7 @@ missing_value_sampler_lastyear <- function(data, miss_ind, knots, theta, alpha) 
 
       for(j in miss_ind_i){
 
-        complete_data[i,j]=rnorm(1,knots[j,k],alpha[j])
+        complete_data[i,j]=rnorm(1,knots[j,k],alpha[j]/sqrt(2))
       }
     }
   }
