@@ -1,6 +1,7 @@
 set.seed(740)
 library(datasets)
 library(mice)
+library(MASS)
 # A hierarchial model to generate 2-dimensional data
 mu.true=function(x){exp(x/6)-x+log(x^4+1)}
 sigma.true=function(x){(x^2)*exp(-abs(x))}
@@ -31,13 +32,15 @@ missing_data2 <- data2
 missing_data2[missing_x_index_1,1] = NA
 missing_data2[missing_y_index_1,2] = NA
 missing_data2[missing_z_index_1,3] = NA
-bad_index= c(0)
-for(i in 1:100){
+bad = c()
+for (i in 1:100){
   if(is.na(missing_data2[i,1]) & is.na(missing_data2[i,2]) & is.na(missing_data2[i,3])){
-    bad_index = c(bad_index,i)
+    bad = c(bad,i)
   }
 }
-missing_data2 = missing_data2[-bad_index,]
+if(length(bad) >0){
+  missing_data2 = missing_data2[-bad,]
+}
 
 # real windspeed data
 data3 = mice::windspeed
@@ -57,3 +60,14 @@ missing_data3[missing_c_index,3] = NA
 missing_data3[missing_d_index,4] = NA
 missing_data3[missing_e_index,5] = NA
 missing_data3[missing_f_index,6] = NA
+bad1 = c()
+for (i in 1:100){
+  if(is.na(missing_data3[i,1]) & is.na(missing_data3[i,2]) & is.na(missing_data3[i,3]) & is.na(missing_data3[i,4]) &
+     is.na(missing_data3[i,5]) & is.na(missing_data3[i,6])){
+    bad1 = c(bad1,i)
+  }
+}
+if(length(bad1) >0){
+  missing_data3 = missing_data3[-bad,]
+}
+missing_data3 <- as.matrix(missing_data3)
